@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rescue Game</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Link to CSS -->
+</head>
+<body>
+    
+    <div id="probability-container">
+        <p id="probability-counter">Last Quarantine Probability: N/A</p>
+        <p id="probability-explanation">This probability represents the likelihood of requiring quarantine after rescuing a victim.</p>
+    </div>
+
+    <!-- Info Button (Top-Right) -->
+    <button id="info-button">❓</button>
+
+    <!-- Instructions Popup -->
+    <div id="instructions-popup" class="hidden">
+        <div class="popup-content">
+            <h2>Instructions</h2>
+            <p>Rescue victims and score points! Each player controls a rescuer:</p>
+            <ul>
+                <li><b>Both Players:</b> Move using <b>WASD</b> (Player 1) and <b>Arrow Keys</b> (Player 2).</li>
+                <li>Each rescue increases your score but may require quarantine.</li>
+                <li><b>Orange victims:</b> 50% chance of quarantine.</li>
+                <li><b>Purple victims:</b> 5% chance of quarantine.</li>
+                <li>To recover, players must <b>stay inside the quarantine zone</b> until marked "Fit for tasks."</li>
+            </ul>
+            <button id="close-popup">Close</button>
+        </div>
+    </div>
+
+    <div id="container">
+        <!-- Left Task List -->
+        <div id="task-list-red">
+            <h3>Task List P1</h3>
+            <p>Recommended tasks can be shown here</p>
+        </div>
+
+        <div>
+            <p>Player 1: Move with <b>WASD</b></p>
+            <p>Player 2: Move with <b>Arrow Keys</b></p>
+
+            <div id="scoreboard">
+                <p>P1 Score: <span id="red-score">0</span> | P2 Score: <span id="blue-score">0</span></p>
+                
+                <div class="status-container">
+                    <p>Player 1 Status</p>
+                    <div class="status-bar" id="p1-status-bar">
+                        <div class="status-fill" id="p1-fill"></div>
+                    </div>
+                    <p id="p1-status-text" class="fit">Fit for tasks</p>
+                </div>
+
+                <div class="status-container">
+                    <p>Player 2 Status</p>
+                    <div class="status-bar" id="p2-status-bar">
+                        <div class="status-fill" id="p2-fill"></div>
+                    </div>
+                    <p id="p2-status-text" class="fit">Fit for tasks</p>
+                </div>
+            </div>
+
+            <div id="game-container">
+                <div id="victim-zone"></div>
+
+                <div id="player1" class="player"><span class="player-label">P1</span></div>
+                <div id="player2" class="player"><span class="player-label">P2</span></div>
+            </div>
+        </div>
+
+        <!-- Right Task List -->
+        <div id="task-list-blue">
+            <h3>Task List P2</h3>
+            <p>Recommended tasks can be shown here</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
