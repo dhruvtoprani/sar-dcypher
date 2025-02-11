@@ -37,6 +37,24 @@ document.addEventListener("DOMContentLoaded", () => {
     let keysPressed = {};
     let victims = [];
 
+
+// 📊 Quarantine Probability Tracking
+let orangeRescues = 0, orangeQuarantines = 0;
+let purpleRescues = 0, purpleQuarantines = 0;
+
+// 🔢 Update Probability Counters
+function updateProbabilityCounters() {
+    let orangeProb = orangeRescues > 0 ? (orangeQuarantines / orangeRescues * 100).toFixed(1) : 0;
+    let purpleProb = purpleRescues > 0 ? (purpleQuarantines / purpleRescues * 100).toFixed(1) : 0;
+
+    probabilityCounter.innerHTML = `
+        <p>Last Quarantine Probability:</p>
+        <p>🟠 Orange Victims: ${orangeProb}%</p>
+        <p>🟣 Purple Victims: ${purpleProb}%</p>
+    `;
+}
+
+
     // 🎮 Handle Key Presses
     document.addEventListener("keydown", (event) => {
         const key = event.key.toLowerCase();
@@ -118,29 +136,37 @@ document.addEventListener("DOMContentLoaded", () => {
     // 🎲 Check for Rescue & Apply Quarantine
     function checkVictimRescue() {
         victims.forEach((victim, index) => {
-            let quarantineChance = victim.color === "orange" ? 50 : 5;
+            let isOrange = victim.color === "orange";
+            let quarantineChance = isOrange ? 50 : 5;
+            let scoreIncrease = isOrange ? 10 : 1;
     
             if (!p1Quarantined && isColliding(player1, victim)) {
                 if (Math.random() < quarantineChance / 100) {
                     applyQuarantine("player1");
+                    isOrange ? orangeQuarantines++ : purpleQuarantines++;
                 }
-                redScore += 10;
+                redScore += scoreIncrease;
                 redScoreElement.textContent = redScore;
+                isOrange ? orangeRescues++ : purpleRescues++;
+                updateProbabilityCounters();
                 respawnVictim(index);
             }
     
             if (!p2Quarantined && isColliding(player2, victim)) {
                 if (Math.random() < quarantineChance / 100) {
                     applyQuarantine("player2");
+                    isOrange ? orangeQuarantines++ : purpleQuarantines++;
                 }
-                blueScore += 10;
+                blueScore += scoreIncrease;
                 blueScoreElement.textContent = blueScore;
+                isOrange ? orangeRescues++ : purpleRescues++;
+                updateProbabilityCounters();
                 respawnVictim(index);
             }
-    
-            probabilityCounter.textContent = `Last Quarantine Probability: ${quarantineChance}%`;
         });
     }
+    
+    
     
 
     // 🚷 Apply Quarantine (Prevents Rescue but ALLOWS Movement)
@@ -158,20 +184,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 🔄 Restore Status After Pressing "E"
     function resetStatus(player) {
         if (player === "player1") {
-            p1Quarantined = false;
-            p1StatusFill.style.width = "100%";
-            p1StatusText.textContent = "Fit for tasks";
-            p1StatusText.classList.remove("unfit");
+            p1StatusText.textContent = "Recovering...";
+            p1StatusText.classList.add("recovering");
+    
+            setTimeout(() => {
+                p1Quarantined = false;
+                p1StatusFill.style.width = "100%";
+                p1StatusText.textContent = "Fit for tasks";
+                p1StatusText.classList.remove("unfit", "recovering");
+            }, 3000); // ⏳ 3-second delay before recovery
         } else {
-            p2Quarantined = false;
-            p2StatusFill.style.width = "100%";
-            p2StatusText.textContent = "Fit for tasks";
-            p2StatusText.classList.remove("unfit");
+            p2StatusText.textContent = "Recovering...";
+            p2StatusText.classList.add("recovering");
+    
+            setTimeout(() => {
+                p2Quarantined = false;
+                p2StatusFill.style.width = "100%";
+                p2StatusText.textContent = "Fit for tasks";
+                p2StatusText.classList.remove("unfit", "recovering");
+            }, 3000); // ⏳ 3-second delay before recovery
         }
     }
+    
 
     // 🎲 Check Collision Between Player & Victim
     function isColliding(player, victim) {
