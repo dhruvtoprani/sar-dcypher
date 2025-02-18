@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let blueScore = 0;
     let p1Quarantined = false;
     let p2Quarantined = false;
+    let taskCounter = 1; // Initialize task numbering globally
 
     // 🎮 Game Constants
     const step = 5;
@@ -61,10 +62,7 @@ function updateProbabilityCounters() {
         keysPressed[key] = true;
 
         // Allow players to press "E" to exit quarantine
-        if (key === "e") {
-            if (p1Quarantined) resetStatus("player1");
-            if (p2Quarantined) resetStatus("player2");
-        }
+
     });
 
     document.addEventListener("keyup", (event) => {
@@ -86,38 +84,42 @@ function updateProbabilityCounters() {
         }
     });
 
-    // 🔄 Update Player Movement (Even When Unfit)
-    function updatePositions() {
-        if (keysPressed["w"]) player1Pos.y = Math.max(0, player1Pos.y - step);
-        if (keysPressed["s"]) player1Pos.y = Math.min(boxSize - playerSize, player1Pos.y + step);
-        if (keysPressed["a"]) player1Pos.x = Math.max(0, player1Pos.x - step);
-        if (keysPressed["d"]) player1Pos.x = Math.min(boxSize - playerSize, player1Pos.x + step);
+function updatePositions() {
+    const gameBounds = gameContainer.getBoundingClientRect();
+    const playerBounds = player1.getBoundingClientRect(); // Players are the same size
 
-        if (keysPressed["arrowup"]) player2Pos.y = Math.max(0, player2Pos.y - step);
-        if (keysPressed["arrowdown"]) player2Pos.y = Math.min(boxSize - playerSize, player2Pos.y + step);
-        if (keysPressed["arrowleft"]) player2Pos.x = Math.max(0, player2Pos.x - step);
-        if (keysPressed["arrowright"]) player2Pos.x = Math.min(boxSize - playerSize, player2Pos.x + step);
+    // Ensure players can move fully within the game container
+    if (keysPressed["w"]) player1Pos.y = Math.max(0, player1Pos.y - step);
+    if (keysPressed["s"]) player1Pos.y = Math.min(gameBounds.height - playerBounds.height, player1Pos.y + step);
+    if (keysPressed["a"]) player1Pos.x = Math.max(0, player1Pos.x - step);
+    if (keysPressed["d"]) player1Pos.x = Math.min(gameBounds.width - playerBounds.width, player1Pos.x + step);
 
-        player1.style.left = player1Pos.x + "px";
-        player1.style.top = player1Pos.y + "px";
-        player2.style.left = player2Pos.x + "px";
-        player2.style.top = player2Pos.y + "px";
+    if (keysPressed["arrowup"]) player2Pos.y = Math.max(0, player2Pos.y - step);
+    if (keysPressed["arrowdown"]) player2Pos.y = Math.min(gameBounds.height - playerBounds.height, player2Pos.y + step);
+    if (keysPressed["arrowleft"]) player2Pos.x = Math.max(0, player2Pos.x - step);
+    if (keysPressed["arrowright"]) player2Pos.x = Math.min(gameBounds.width - playerBounds.width, player2Pos.x + step);
 
-        checkVictimRescue();
-        requestAnimationFrame(updatePositions);
-    }
+    player1.style.left = `${player1Pos.x}px`;
+    player1.style.top = `${player1Pos.y}px`;
+    player2.style.left = `${player2Pos.x}px`;
+    player2.style.top = `${player2Pos.y}px`;
 
-    // 🏥 Spawn Victims
+    checkVictimRescue();
+    requestAnimationFrame(updatePositions);
+}
+
+
+
     function spawnVictims() {
-        victims.forEach(victim => victim.element.remove());
+        victims.forEach(victim => victim.element.remove()); // Clear existing victims
         victims = [];
     
         let halfVictims = Math.floor(numVictims / 2);
     
         for (let i = 0; i < numVictims; i++) {
             let victim = document.createElement("div");
+            let taskLabel = document.createElement("span"); // Task number label
     
-            // Ensure exactly half of each color
             let isOrange = i < halfVictims || (numVictims % 2 !== 0 && i === halfVictims);
             victim.classList.add("victim", isOrange ? "red-victim" : "blue-victim");
     
@@ -127,8 +129,15 @@ function updateProbabilityCounters() {
             victim.style.left = posX + "px";
             victim.style.top = posY + "px";
     
+            // Set up the task label
+            taskLabel.textContent = `Task ${taskCounter++}`;
+            taskLabel.classList.add("task-label");
+            taskLabel.style.left = `${posX}px`;
+            taskLabel.style.top = `${posY - 20}px`; // Position above victim
+    
+            gameContainer.appendChild(taskLabel);
             gameContainer.appendChild(victim);
-            victims.push({ element: victim, x: posX, y: posY, color: isOrange ? "orange" : "purple" });
+            victims.push({ element: victim, label: taskLabel, x: posX, y: posY, color: isOrange ? "orange" : "purple" });
         }
     }
     
@@ -170,44 +179,74 @@ function updateProbabilityCounters() {
     
 
     // 🚷 Apply Quarantine (Prevents Rescue but ALLOWS Movement)
-    function applyQuarantine(player) {
-        if (player === "player1") {
-            p1Quarantined = true;
-            p1StatusFill.style.width = "0%";
-            p1StatusText.textContent = "Unfit for tasks! Press 'E' to recover";
-            p1StatusText.classList.add("unfit");
-        } else {
-            p2Quarantined = true;
-            p2StatusFill.style.width = "0%";
-            p2StatusText.textContent = "Unfit for tasks! Press 'E' to recover";
-            p2StatusText.classList.add("unfit");
-        }
-    }
+function applyQuarantine(player) {
+    let quarantineTime = 5; // Quarantine duration in seconds
 
-    function resetStatus(player) {
-        if (player === "player1") {
-            p1StatusText.textContent = "Recovering...";
-            p1StatusText.classList.add("recovering");
-    
-            setTimeout(() => {
-                p1Quarantined = false;
-                p1StatusFill.style.width = "100%";
-                p1StatusText.textContent = "Fit for tasks";
-                p1StatusText.classList.remove("unfit", "recovering");
-            }, 3000); // ⏳ 3-second delay before recovery
-        } else {
-            p2StatusText.textContent = "Recovering...";
-            p2StatusText.classList.add("recovering");
-    
-            setTimeout(() => {
-                p2Quarantined = false;
-                p2StatusFill.style.width = "100%";
-                p2StatusText.textContent = "Fit for tasks";
-                p2StatusText.classList.remove("unfit", "recovering");
-            }, 3000); // ⏳ 3-second delay before recovery
-        }
+    if (player === "player1") {
+        p1Quarantined = true;
+        p1StatusFill.style.width = "0%";
+        p1StatusText.textContent = `Quarantined for ${quarantineTime} seconds`;
+        p1StatusText.classList.add("unfit");
+
+        let countdown = setInterval(() => {
+            quarantineTime--;
+            p1StatusText.textContent = `Quarantined for ${quarantineTime} seconds`;
+
+            if (quarantineTime <= 0) {
+                clearInterval(countdown);
+                resetStatus("player1");
+            }
+        }, 1000); // Update every second
+
+        flickerEffect(p1StatusFill); // Start flickering effect
+    } else {
+        p2Quarantined = true;
+        p2StatusFill.style.width = "0%";
+        p2StatusText.textContent = `Quarantined for ${quarantineTime} seconds`;
+        p2StatusText.classList.add("unfit");
+
+        let countdown = setInterval(() => {
+            quarantineTime--;
+            p2StatusText.textContent = `Quarantined for ${quarantineTime} seconds`;
+
+            if (quarantineTime <= 0) {
+                clearInterval(countdown);
+                resetStatus("player2");
+            }
+        }, 1000);
+
+        flickerEffect(p2StatusFill); // Start flickering effect
     }
-    
+}
+
+ // 🔄 Restore Status After Quarantine Ends
+function resetStatus(player) {
+    if (player === "player1") {
+        p1Quarantined = false;
+        p1StatusFill.style.width = "100%";
+        p1StatusText.textContent = "Fit for tasks";
+        p1StatusText.classList.remove("unfit");
+    } else {
+        p2Quarantined = false;
+        p2StatusFill.style.width = "100%";
+        p2StatusText.textContent = "Fit for tasks";
+        p2StatusText.classList.remove("unfit");
+    }
+}
+
+// 🔴 Flickering Effect for Quarantine Status Bar
+function flickerEffect(statusBar) {
+    let isRed = false;
+    let flickerInterval = setInterval(() => {
+        statusBar.style.backgroundColor = isRed ? "red" : "darkred";
+        isRed = !isRed;
+    }, 3); // Flicker every 3ms
+
+    setTimeout(() => {
+        clearInterval(flickerInterval);
+        statusBar.style.backgroundColor = "green"; // Reset to normal after quarantine
+    }, 5000); // Stop flickering after quarantine ends
+}
 
     // 🎲 Check Collision Between Player & Victim
     function isColliding(player, victim) {
@@ -225,14 +264,31 @@ function updateProbabilityCounters() {
 
     // 🔄 Respawn Victims After Collection
     function respawnVictim(index) {
+        victims[index].element.remove(); // Remove victim
+        victims[index].label.remove(); // Remove task label
+    
         let newPosX = Math.floor(Math.random() * (boxSize - victimSize));
         let newPosY = Math.floor(Math.random() * (boxSize - victimSize));
-
-        victims[index].x = newPosX;
-        victims[index].y = newPosY;
-        victims[index].element.style.left = newPosX + "px";
-        victims[index].element.style.top = newPosY + "px";
+    
+        let newVictim = document.createElement("div");
+        let newTaskLabel = document.createElement("span");
+    
+        newVictim.classList.add("victim", victims[index].color === "orange" ? "red-victim" : "blue-victim");
+    
+        newVictim.style.left = newPosX + "px";
+        newVictim.style.top = newPosY + "px";
+    
+        newTaskLabel.textContent = `Task ${taskCounter++}`;
+        newTaskLabel.classList.add("task-label");
+        newTaskLabel.style.left = `${newPosX}px`;
+        newTaskLabel.style.top = `${newPosY - 20}px`;
+    
+        gameContainer.appendChild(newTaskLabel);
+        gameContainer.appendChild(newVictim);
+    
+        victims[index] = { element: newVictim, label: newTaskLabel, x: newPosX, y: newPosY, color: victims[index].color };
     }
+    
 
     // 🎮 Start Game
     spawnVictims();
